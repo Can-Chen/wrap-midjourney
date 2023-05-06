@@ -26,6 +26,10 @@ const (
 	 */
 	GenerateEditError Scene = "GenerateEditError"
 	/**
+	 * 富文本
+	 */
+	RichText Scene = "RichText"
+	/**
 	 * 发送的指令midjourney直接报错或排队阻塞不在该项目中处理 在业务服务中处理
 	 * 例如：首次触发生成多少秒后没有回调业务服务判定会指令错误或者排队阻塞
 	 */
@@ -73,6 +77,8 @@ func DiscordMsgUpdate(s *discord.Session, m *discord.MessageUpdate) {
 		return
 	}
 
+	fmt.Println(fmt.Sprintf("测试打印，authorId: %s, userId: %s", m.Author.ID, s.State.User.ID))
+
 	// 过滤掉自己发送的消息
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -80,7 +86,7 @@ func DiscordMsgUpdate(s *discord.Session, m *discord.MessageUpdate) {
 
 	/******** *********/
 	if data, err := json.Marshal(m); err == nil {
-		fmt.Println("discord message update: ", string(data))
+		fmt.Println("\ndiscord message update: ", string(data))
 	}
 	/******** *********/
 
@@ -89,18 +95,32 @@ func DiscordMsgUpdate(s *discord.Session, m *discord.MessageUpdate) {
 		trigger(m.Content, GenerateEditError)
 		return
 	}
+
+	if len(m.Embeds) > 0 {
+		send(m.Embeds)
+		return
+	}
 }
 
 type ReqCb struct {
-	Discord *discord.MessageCreate `json:"discord,omitempty"`
-	Content string                 `json:"content,omitempty"`
-	Type    Scene                  `json:"type"`
+	Embeds  []*discord.MessageEmbed `json:"embeds,omitempty"`
+	Discord *discord.MessageCreate  `json:"discord,omitempty"`
+	Content string                  `json:"content,omitempty"`
+	Type    Scene                   `json:"type"`
 }
 
 func replay(m *discord.MessageCreate) {
 	body := ReqCb{
 		Discord: m,
 		Type:    GenerateEnd,
+	}
+	request(body)
+}
+
+func send(embeds []*discord.MessageEmbed) {
+	body := ReqCb{
+		Embeds: embeds,
+		Type:   RichText,
 	}
 	request(body)
 }

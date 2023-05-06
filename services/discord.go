@@ -6,10 +6,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	config "wrap-midjourney/initialization"
 )
 
-const url = "https://discord.com/api/v9/interactions"
+const (
+	url       = "https://discord.com/api/v9/interactions"
+	uploadUrl = "https://discord.com/api/v9/channels/<你的频道>/attachments"
+)
 
 func GenerateImage(prompt string) error {
 	requestBody := ReqTriggerDiscord{
@@ -37,10 +41,10 @@ func GenerateImage(prompt string) error {
 				DmPermission:             true,
 				Options:                  []DSCommandOption{{Type: 3, Name: "prompt", Description: "The prompt to imagine", Required: true}},
 			},
-			Attachments: []interface{}{},
+			Attachments: []ReqCommandAttachments{},
 		},
 	}
-	err := request(requestBody)
+	_, err := request(requestBody, url)
 	return err
 }
 
@@ -58,7 +62,7 @@ func Upscale(index int64, messageId string, messageHash string) error {
 			CustomId:      fmt.Sprintf("MJ::JOB::upsample::%d::%s", index, messageHash),
 		},
 	}
-	err := request(requestBody)
+	_, err := request(requestBody, url)
 	return err
 }
 
@@ -81,7 +85,7 @@ func MaxUpscale(messageId string, messageHash string) error {
 
 	fmt.Println("max upscale request body: ", string(data))
 
-	err := request(requestBody)
+	_, err := request(requestBody, url)
 	return err
 }
 
@@ -99,7 +103,7 @@ func Variate(index int64, messageId string, messageHash string) error {
 			CustomId:      fmt.Sprintf("MJ::JOB::variation::%d::%s", index, messageHash),
 		},
 	}
-	err := request(requestBody)
+	_, err := request(requestBody, url)
 	return err
 }
 
@@ -117,28 +121,79 @@ func Reset(messageId string, messageHash string) error {
 			CustomId:      fmt.Sprintf("MJ::JOB::reroll::0::%s::SOLO", messageHash),
 		},
 	}
-	err := request(requestBody)
+	_, err := request(requestBody, url)
 	return err
 }
 
-func request(params interface{}) error {
+func Describe(uploadName string) error {
+	requestBody := ReqTriggerDiscord{
+		Type:          2,
+		GuildID:       config.GetConfig().DISCORD_SERVER_ID,
+		ChannelID:     config.GetConfig().DISCORD_CHANNEL_ID,
+		ApplicationId: "936929561302675456",
+		SessionId:     "0033db636f7ce1a951e54cdac7044de3",
+		Data: DSCommand{
+			Version: "1092492867185950853",
+			Id:      "1092492867185950852",
+			Name:    "describe",
+			Type:    1,
+			Options: []DSOption{{Type: 11, Name: "image", Value: 0}},
+			ApplicationCommand: DSApplicationCommand{
+				Id:                       "1092492867185950852",
+				ApplicationId:            "936929561302675456",
+				Version:                  "1092492867185950853",
+				DefaultPermission:        true,
+				DefaultMemberPermissions: nil,
+				Type:                     1,
+				Nsfw:                     false,
+				Name:                     "describe",
+				Description:              "Writes a prompt based on your image.",
+				DmPermission:             true,
+				Options:                  []DSCommandOption{{Type: 11, Name: "image", Description: "The image to describe", Required: true}},
+			},
+			Attachments: []ReqCommandAttachments{{
+				Id:             "0",
+				Filename:       filepath.Base(uploadName),
+				UploadFilename: uploadName,
+			}},
+		},
+	}
+	_, err := request(requestBody, url)
+	return err
+}
+
+func Attachments(name string, size int64) (ResAttachments, error) {
+	requestBody := ReqAttachments{
+		Files: []ReqFile{{
+			Filename: name,
+			FileSize: size,
+			Id:       "1",
+		}},
+	}
+	body, err := request(requestBody, uploadUrl)
+	var data ResAttachments
+	json.Unmarshal(body, &data)
+	return data, err
+}
+
+func request(params interface{}, url string) ([]byte, error) {
 	requestData, err := json.Marshal(params)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestData))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", config.GetConfig().DISCORD_USER_TOKEN)
 	client := &http.Client{}
 	response, err := client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer response.Body.Close()
 	bod, respErr := ioutil.ReadAll(response.Body)
-	fmt.Println("upscale response: ", string(bod), respErr, response.Status)
-	return respErr
+	fmt.Println("response: ", string(bod), respErr, response.Status)
+	return bod, respErr
 }
