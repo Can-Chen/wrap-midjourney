@@ -77,8 +77,10 @@ func DiscordMsgUpdate(s *discord.Session, m *discord.MessageUpdate) {
 		return
 	}
 
-	fmt.Println(fmt.Sprintf("测试打印，authorId: %s, userId: %s", m.Author.ID, s.State.User.ID))
-
+	if m.Author == nil {
+		return
+	}
+	
 	// 过滤掉自己发送的消息
 	if m.Author.ID == s.State.User.ID {
 		return
