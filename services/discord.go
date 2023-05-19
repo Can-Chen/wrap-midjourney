@@ -12,7 +12,7 @@ import (
 
 const (
 	url       = "https://discord.com/api/v9/interactions"
-	uploadUrl = "https://discord.com/api/v9/channels/<你的频道>/attachments"
+	uploadUrl = "https://discord.com/api/v9/channels/%s/attachments"
 )
 
 func GenerateImage(prompt string) error {
@@ -170,7 +170,8 @@ func Attachments(name string, size int64) (ResAttachments, error) {
 			Id:       "1",
 		}},
 	}
-	body, err := request(requestBody, uploadUrl)
+	replacedUrl := fmt.Sprintf(uploadUrl, config.GetConfig().DISCORD_CHANNEL_ID)
+	body, err := request(requestBody, replacedUrl)
 	var data ResAttachments
 	json.Unmarshal(body, &data)
 	return data, err
