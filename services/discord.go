@@ -8,12 +8,11 @@ import (
 	"net/http"
 	"path/filepath"
 	config "wrap-midjourney/initialization"
-	"strings"
 )
 
 const (
 	url       = "https://discord.com/api/v9/interactions"
-	uploadUrl = "https://discord.com/api/v9/channels/<你的频道>/attachments"
+	uploadUrl = "https://discord.com/api/v9/channels/%s/attachments"
 )
 
 func GenerateImage(prompt string) error {
@@ -171,8 +170,7 @@ func Attachments(name string, size int64) (ResAttachments, error) {
 			Id:       "1",
 		}},
 	}
-	channelID := config.GetConfig().DISCORD_CHANNEL_ID
-	replacedUrl := strings.Replace(uploadUrl, "<你的频道>", channelID, 1)
+	replacedUrl := fmt.Sprintf(uploadUrl, config.GetConfig().DISCORD_CHANNEL_ID)
 	body, err := request(requestBody, replacedUrl)
 	var data ResAttachments
 	json.Unmarshal(body, &data)
