@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	config "wrap-midjourney/initialization"
+	"strings"
 )
 
 const (
@@ -170,7 +171,9 @@ func Attachments(name string, size int64) (ResAttachments, error) {
 			Id:       "1",
 		}},
 	}
-	body, err := request(requestBody, uploadUrl)
+        channelID := config.GetConfig().DISCORD_CHANNEL_ID
+        replacedUrl := strings.Replace(uploadUrl, "<你的频道>", channelID, 1)
+	body, err := request(requestBody, replacedUrl)
 	var data ResAttachments
 	json.Unmarshal(body, &data)
 	return data, err
