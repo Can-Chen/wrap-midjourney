@@ -93,10 +93,8 @@ func DiscordMsgUpdate(s *discord.Session, m *discord.MessageUpdate) {
 	/******** *********/
 
 	/******** 发送的指令midjourney生成发现错误 ********/
-	if strings.Contains(m.Content, "(Stopped)") {
-		trigger(m.Content, GenerateEditError)
-		return
-	}
+	trigger(m.Content, GenerateEditError)
+	return
 
 	if len(m.Embeds) > 0 {
 		send(m.Embeds)
