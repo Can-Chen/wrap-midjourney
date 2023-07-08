@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"wrap-midjourney/handlers"
 	"wrap-midjourney/initialization"
 
@@ -13,7 +14,12 @@ func main() {
 
 	pflag.Parse()
 
-	initialization.LoadConfig(*cfg)
+	_, err := initialization.LoadConfig(*cfg)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	initialization.LoadDiscordClient(handlers.DiscordMsgCreate, handlers.DiscordMsgUpdate)
 
 	r := gin.Default()
@@ -21,5 +27,8 @@ func main() {
 	r.POST("/v1/trigger/midjourney-bot", handlers.MidjourneyBot)
 	r.POST("/v1/trigger/upload", handlers.UploadFile)
 
-	r.Run(":16007")
+	err = r.Run(":16007")
+	if err != nil {
+		fmt.Println(err)
+	}
 }

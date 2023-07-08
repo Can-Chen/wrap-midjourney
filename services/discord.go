@@ -162,7 +162,7 @@ func Describe(uploadName string) error {
 	return err
 }
 
-func Attachments(name string, size int64) (ResAttachments, error) {
+func Attachments(name string, size int64) (*ResAttachments, error) {
 	requestBody := ReqAttachments{
 		Files: []ReqFile{{
 			Filename: name,
@@ -172,9 +172,13 @@ func Attachments(name string, size int64) (ResAttachments, error) {
 	}
 	replacedUrl := fmt.Sprintf(uploadUrl, config.GetConfig().DISCORD_CHANNEL_ID)
 	body, err := request(requestBody, replacedUrl)
+	if err != nil {
+		return nil, err
+	}
+
 	var data ResAttachments
-	json.Unmarshal(body, &data)
-	return data, err
+	err = json.Unmarshal(body, &data)
+	return &data, err
 }
 
 func request(params interface{}, url string) ([]byte, error) {
