@@ -16,9 +16,12 @@ type Config struct {
 
 var config *Config
 
-func LoadConfig(cfg string) *Config {
+func LoadConfig(cfg string) (*Config, error) {
 	viper.SetConfigFile(cfg)
-	viper.ReadInConfig()
+	err := viper.ReadInConfig()
+	if err != nil {
+		return nil, err
+	}
 	viper.AutomaticEnv()
 	config = &Config{
 		DISCORD_USER_TOKEN: getViperStringValue("DISCORD_USER_TOKEN"),
@@ -27,7 +30,7 @@ func LoadConfig(cfg string) *Config {
 		DISCORD_CHANNEL_ID: getViperStringValue("DISCORD_CHANNEL_ID"),
 		CB_URL:             getViperStringValue("CB_URL"),
 	}
-	return config
+	return config, nil
 }
 
 func GetConfig() *Config {
